@@ -15,24 +15,9 @@
 ;; ---- Metrics ----------------------------------------------------------------
 
 (prom/defgauge alarms
-  "Number of alarms/problems that have occurred."
-  {:namespace "datomic"})
-
-(prom/defgauge alarms-indexing-job-failed
-  "Number of alarms related to the indexing job."
-  {:namespace "datomic"})
-
-(prom/defgauge alarms-backpressure
-  "Number of alarms related to the transactor using back pressure."
-  {:namespace "datomic"})
-
-(prom/defgauge alarms-unhandled-exception
-  "Number of alarms related to unhandled exceptions."
-  {:namespace "datomic"})
-
-(prom/defgauge alarms-other
-  "Number of alarms that are not related to any other specific alarm metric."
-  {:namespace "datomic"})
+  "Number of alarms/problems that have occurred distinguished by their kind."
+  {:namespace "datomic"}
+  "kind")
 
 (prom/defgauge available-ram-megabytes
   "Unused RAM on transactor in MB."
@@ -171,10 +156,6 @@
     (.register (ClassLoadingExports.))
     (.register (VersionInfoExports.))
     (.register alarms)
-    (.register alarms-indexing-job-failed)
-    (.register alarms-backpressure)
-    (.register alarms-unhandled-exception)
-    (.register alarms-other)
     (.register available-ram-megabytes)
     (.register object-cache-size)
     (.register remote-peers)
@@ -214,20 +195,14 @@
 (defn tx-metrics-callback-handler
   "Called by Datomic transactor transferring its metrics."
   [tx-metrics]
-  (when-let [alarms (:Alarm tx-metrics)]
-    (prom/set! alarms (count (keys alarms))))
-
   (when-let [{:keys [sum]} (:AlarmIndexingJobFailed tx-metrics)]
-    (prom/set! alarms-indexing-job-failed sum))
+    (prom/set! alarms "index-job-failed" sum))
 
   (when-let [{:keys [sum]} (:AlarmBackPressure tx-metrics)]
-    (prom/set! alarms-backpressure sum))
+    (prom/set! alarms "back-pressure" sum))
 
   (when-let [{:keys [sum]} (:AlarmUnhandledException tx-metrics)]
-    (prom/set! alarms-unhandled-exception sum))
-
-  (when-let [{:keys [sum]} (:AlarmUnhandledException tx-metrics)]
-    (prom/set! alarms-unhandled-exception sum))
+    (prom/set! alarms "unhandled-exception" sum))
 
   (->> (keys tx-metrics)
        (filter
@@ -241,7 +216,7 @@
          (fn [count {:keys [sum]}]
            (+ count sum))
          0)
-       (prom/set! alarms-other))
+       (prom/set! alarms "other"))
 
   (when-let [mb (:AvailableMB tx-metrics)]
     (prom/set! available-ram-megabytes mb))

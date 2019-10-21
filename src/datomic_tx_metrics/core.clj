@@ -27,6 +27,10 @@
   "Number of segments in the Datomic object cache."
   {:namespace "datomic"})
 
+(prom/defgauge object-cache-requests
+  "Number of requests to the Datomic object cache."
+  {:namespace "datomic"})
+
 (prom/defgauge remote-peers
   "Number of remote peers connected."
   {:namespace "datomic"})
@@ -158,6 +162,7 @@
     (.register alarms)
     (.register available-ram-megabytes)
     (.register object-cache-size)
+    (.register object-cache-requests)
     (.register remote-peers)
     (.register successful-metric-reports)
     (.register transacted-datoms-total)
@@ -312,10 +317,13 @@
       (prom/inc! storage-backoff-retries-total count))
     (prom/clear! storage-backoff-msec))
 
-  ; TODO: discuss if this is actually a sane move - resetting this might be misleading without another metrics showing how many cache requests were made...
   (if-let [{:keys [sum count]} (:ObjectCache tx-metrics)]
-    (prom/set! object-cache-hits-ratio (/ (double sum) count))
-    (prom/clear! object-cache-hits-ratio))
+    (do
+      (prom/set! object-cache-hits-ratio (/ (double sum) count))
+      (prom/set! object-cache-requests sum))
+    (do
+      (prom/clear! object-cache-hits-ratio)
+      (prom/clear! object-cache-requests)))
 
   (if-let [{:keys [sum]} (:GarbageSegments tx-metrics)]
     (prom/set! garbage-segments sum)

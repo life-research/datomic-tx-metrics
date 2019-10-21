@@ -195,14 +195,17 @@
 (defn tx-metrics-callback-handler
   "Called by Datomic transactor transferring its metrics."
   [tx-metrics]
-  (when-let [{:keys [sum]} (:AlarmIndexingJobFailed tx-metrics)]
-    (prom/set! alarms "index-job-failed" sum))
+  (if-let [{:keys [sum]} (:AlarmIndexingJobFailed tx-metrics)]
+    (prom/set! alarms "index-job-failed" sum)
+    (prom/set! alarms "index-job-failed" 0))
 
   (when-let [{:keys [sum]} (:AlarmBackPressure tx-metrics)]
-    (prom/set! alarms "back-pressure" sum))
+    (prom/set! alarms "back-pressure" sum)
+    (prom/set! alarms "back-pressure" 0))
 
   (when-let [{:keys [sum]} (:AlarmUnhandledException tx-metrics)]
-    (prom/set! alarms "unhandled-exception" sum))
+    (prom/set! alarms "unhandled-exception" sum)
+    (prom/set! alarms "unhandled-exception" 0))
 
   (->> (keys tx-metrics)
        (filter
@@ -234,8 +237,9 @@
     (prom/inc! transacted-datoms-total sum)
     (prom/inc! transactions-total count))
 
-  (when-let [{:keys [count]} (:TransactionBatch tx-metrics)]
-    (prom/set! transactions-batch count))
+  (if-let [{:keys [count]} (:TransactionBatch tx-metrics)]
+    (prom/set! transactions-batch count)
+    (prom/clear! transactions-batch))
 
   (when-let [{:keys [sum]} (:TransactionBytes tx-metrics)]
     (prom/inc! transacted-bytes-total sum))
@@ -249,57 +253,73 @@
   (when-let [{:keys [sum]} (:LogWriteMsec tx-metrics)]
     (prom/inc! transactions-write-log-msec-total sum))
 
-  (when-let [{:keys [sum]} (:Datoms tx-metrics)]
-    (prom/clear! datoms)
-    (prom/inc! datoms sum))
+  (if-let [{:keys [sum]} (:Datoms tx-metrics)]
+    (prom/set! datoms sum)
+    (prom/clear! datoms))
 
-  (when-let [{:keys [sum]} (:IndexDatoms tx-metrics)]
-    (prom/set! index-datoms sum))
+  ; TODO: check if resetting this is actually what resembles the transactor state
+  (if-let [{:keys [sum]} (:IndexDatoms tx-metrics)]
+    (prom/set! index-datoms sum)
+    (prom/clear! index-datoms))
 
-  (when-let [{:keys [sum]} (:IndexSegments tx-metrics)]
-    (prom/set! index-segments sum))
+  ; TODO: check if resetting this is actually what resembles the transactor state
+  (if-let [{:keys [sum]} (:IndexSegments tx-metrics)]
+    (prom/set! index-segments sum)
+    (prom/clear! index-segments))
 
-  (when-let [{:keys [sum]} (:IndexWrites tx-metrics)]
-    (prom/set! index-writes sum))
+  (if-let [{:keys [sum]} (:IndexWrites tx-metrics)]
+    (prom/set! index-writes sum)
+    (prom/clear! index-writes))
 
-  (when-let [{:keys [sum]} (:IndexWriteMsec tx-metrics)]
-    (prom/set! index-writes-msec sum))
+  (if-let [{:keys [sum]} (:IndexWriteMsec tx-metrics)]
+    (prom/set! index-writes-msec sum)
+    (prom/clear! index-writes-msec))
 
-  (when-let [{:keys [sum]} (:CreateEntireIndexMsec tx-metrics)]
-    (prom/set! index-creation-msec sum))
+  (if-let [{:keys [sum]} (:CreateEntireIndexMsec tx-metrics)]
+    (prom/set! index-creation-msec sum)
+    (prom/clear! index-creation-msec))
 
-  (when-let [{:keys [sum]} (:CreateFulltextIndexMsec tx-metrics)]
-    (prom/set! index-fulltext-creation-msec sum))
+  (if-let [{:keys [sum]} (:CreateFulltextIndexMsec tx-metrics)]
+    (prom/set! index-fulltext-creation-msec sum)
+    (prom/clear! index-fulltext-creation-msec))
 
   (when-let [{:keys [sum]} (:MemoryIndexMB tx-metrics)]
     (prom/set! memory-index-consumed-megabytes sum))
 
-  (when-let [{:keys [sum]} (:MemoryIndexFillMsec tx-metrics)]
-    (prom/set! memory-index-fill-msec sum))
+  (if-let [{:keys [sum]} (:MemoryIndexFillMsec tx-metrics)]
+    (prom/set! memory-index-fill-msec sum)
+    (prom/clear! memory-index-fill-msec))
 
   (when-let [{:keys [sum count]} (:StoragePutBytes tx-metrics)]
     (prom/inc! storage-write-operations-total count)
     (prom/inc! storage-write-bytes-total sum))
 
-  (when-let [{:keys [sum]} (:StoragePutMsec tx-metrics)]
-    (prom/set! storage-write-msec sum))
+  (if-let [{:keys [sum]} (:StoragePutMsec tx-metrics)]
+    (prom/set! storage-write-msec sum)
+    (prom/clear! storage-write-msec))
 
   (when-let [{:keys [sum count]} (:StorageGetBytes tx-metrics)]
     (prom/inc! storage-read-operations-total count)
     (prom/inc! storage-read-bytes-total sum))
 
-  (when-let [{:keys [sum]} (:StorageGetMsec tx-metrics)]
-    (prom/set! storage-read-msec sum))
+  (if-let [{:keys [sum]} (:StorageGetMsec tx-metrics)]
+    (prom/set! storage-read-msec sum)
+    (prom/clear! storage-read-msec))
 
-  (when-let [{:keys [sum count]} (:StorageBackoff tx-metrics)]
-    (prom/set! storage-backoff-msec sum)
-    (prom/inc! storage-backoff-retries-total count))
+  (if-let [{:keys [sum count]} (:StorageBackoff tx-metrics)]
+    (do
+      (prom/set! storage-backoff-msec sum)
+      (prom/inc! storage-backoff-retries-total count))
+    (prom/clear! storage-backoff-msec))
 
-  (when-let [{:keys [sum count]} (:ObjectCache tx-metrics)]
-    (prom/set! object-cache-hits-ratio (/ (double sum) count)))
+  ; TODO: discuss if this is actually a sane move - resetting this might be misleading without another metrics showing how many cache requests were made...
+  (if-let [{:keys [sum count]} (:ObjectCache tx-metrics)]
+    (prom/set! object-cache-hits-ratio (/ (double sum) count))
+    (prom/clear! object-cache-hits-ratio))
 
-  (when-let [{:keys [sum]} (:GarbageSegments tx-metrics)]
-    (prom/set! garbage-segments sum))
+  (if-let [{:keys [sum]} (:GarbageSegments tx-metrics)]
+    (prom/set! garbage-segments sum)
+    (prom/clear! garbage-segments))
 
   (when-let [{:keys [sum count]} (:HeartbeatMsec tx-metrics)]
     (prom/set! heartbeats-msec sum)

@@ -19,8 +19,8 @@
   {:namespace "datomic"}
   "kind")
 
-(prom/defgauge available-ram-megabytes
-  "Unused RAM on transactor in MB."
+(prom/defgauge available-ram-bytes
+  "Unused RAM on transactor in bytes."
   {:namespace "datomic"})
 
 (prom/defgauge object-cache-size
@@ -95,8 +95,8 @@
   "Time to create fulltext portion of index in seconds."
   {:namespace "datomic"})
 
-(prom/defgauge memory-index-consumed-megabytes
-  "RAM consumed by memory index in MB."
+(prom/defgauge memory-index-consumed-bytes
+  "RAM consumed by memory index in bytes."
   {:namespace "datomic"})
 
 (prom/defgauge memory-index-fill-sec
@@ -160,7 +160,7 @@
     (.register (ClassLoadingExports.))
     (.register (VersionInfoExports.))
     (.register alarms)
-    (.register available-ram-megabytes)
+    (.register available-ram-bytes)
     (.register object-cache-size)
     (.register object-cache-requests)
     (.register remote-peers)
@@ -179,7 +179,7 @@
     (.register index-writes-sec)
     (.register index-creation-sec)
     (.register index-fulltext-creation-sec)
-    (.register memory-index-consumed-megabytes)
+    (.register memory-index-consumed-bytes)
     (.register storage-write-operations-total)
     (.register storage-write-bytes-total)
     (.register storage-write-sec)
@@ -202,6 +202,12 @@
   "Converts a `value` given in msec to sec."
   [value]
   (/ (double value) 1000))
+
+
+(defn- mb-to-bytes
+  "Converts a `value` given in MB to B."
+  [value]
+  (* (double value) 1000000))
 
 
 
@@ -237,7 +243,7 @@
        (prom/set! alarms "other"))
 
   (when-let [mb (:AvailableMB tx-metrics)]
-    (prom/set! available-ram-megabytes mb))
+    (prom/set! available-ram-bytes (mb-to-bytes mb)))
 
   (when-let [size (:ObjectCacheCount tx-metrics)]
     (prom/set! object-cache-size size))
@@ -299,7 +305,7 @@
     (prom/clear! index-fulltext-creation-sec))
 
   (when-let [{:keys [sum]} (:MemoryIndexMB tx-metrics)]
-    (prom/set! memory-index-consumed-megabytes sum))
+    (prom/set! memory-index-consumed-bytes (mb-to-bytes sum)))
 
   (if-let [{:keys [sum]} (:MemoryIndexFillMsec tx-metrics)]
     (prom/set! memory-index-fill-sec (msec-to-sec sum))

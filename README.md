@@ -405,3 +405,8 @@ __Problem:__ The transactor refuses to start because there is an error related t
 
 __Solution:__ Depending on the Datomic version in use the netty version that comes with it may be too old missing methods required by this project. Resolve this issue by replacing the netty-all*.jar in Datomic's `/lib` directory with a newer one. _This is also covered by the docker example in the __examples__ section of the repository._   
 
+## License
+
+Copyright © 2019 LIFE Research Center
+
+Distributed under the Eclipse Public License.

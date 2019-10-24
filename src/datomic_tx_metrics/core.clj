@@ -55,15 +55,15 @@
   "Total volume of transaction data to log, peers in bytes."
   {:namespace "datomic"})
 
-(prom/defcounter transactions-sec-total
-  "Total time of transactions in sec."
+(prom/defcounter transactions-seconds-total
+  "Total time of transactions in seconds."
   {:namespace "datomic"})
 
-(prom/defcounter transactions-add-fulltext-sec-total
+(prom/defcounter transactions-add-fulltext-seconds-total
   "Total time of transactions spent to add fulltext in seconds."
   {:namespace "datomic"})
 
-(prom/defcounter transactions-write-log-sec-total
+(prom/defcounter transactions-write-log-seconds-total
   "Total time of transactions spent writing to log per transaction batch in seconds."
   {:namespace "datomic"})
 
@@ -83,15 +83,15 @@
   "Number of segments written by indexing job, reported at end."
   {:namespace "datomic"})
 
-(prom/defgauge index-writes-sec
+(prom/defgauge index-writes-seconds
   "Time per index segment write in seconds."
   {:namespace "datomic"})
 
-(prom/defgauge index-creation-sec
+(prom/defgauge index-creation-seconds
   "Time to create index in seconds, reported at end of indexing job."
   {:namespace "datomic"})
 
-(prom/defgauge index-fulltext-creation-sec
+(prom/defgauge index-fulltext-creation-seconds
   "Time to create fulltext portion of index in seconds."
   {:namespace "datomic"})
 
@@ -99,7 +99,7 @@
   "RAM consumed by memory index in bytes."
   {:namespace "datomic"})
 
-(prom/defgauge memory-index-fill-sec
+(prom/defgauge memory-index-fill-seconds
   "Estimate of the time to fill the memory index in seconds, given the current write load."
   {:namespace "datomic"})
 
@@ -111,7 +111,7 @@
   "Total number of bytes written to storage."
   {:namespace "datomic"})
 
-(prom/defgauge storage-write-sec
+(prom/defgauge storage-write-seconds
   "Time spent writing to storage in seconds."
   {:namespace "datomic"})
 
@@ -123,11 +123,11 @@
   "Total number of bytes read from storage."
   {:namespace "datomic"})
 
-(prom/defgauge storage-read-sec
+(prom/defgauge storage-read-seconds
   "Time spent reading from storage in seconds."
   {:namespace "datomic"})
 
-(prom/defgauge storage-backoff-sec
+(prom/defgauge storage-backoff-seconds
   "Time spent in backoff/retry around calls to storage in seconds."
   {:namespace "datomic"})
 
@@ -143,7 +143,7 @@
   "Number of garbage segments created."
   {:namespace "datomic"})
 
-(prom/defgauge heartbeats-sec
+(prom/defgauge heartbeats-seconds
   "Time spent writing to storage in seconds as part of the heartbeat (transactor writes location)."
   {:namespace "datomic"})
 
@@ -169,28 +169,28 @@
     (.register transactions-total)
     (.register transactions-batch)
     (.register transacted-bytes-total)
-    (.register transactions-sec-total)
-    (.register transactions-add-fulltext-sec-total)
-    (.register transactions-write-log-sec-total)
+    (.register transactions-seconds-total)
+    (.register transactions-add-fulltext-seconds-total)
+    (.register transactions-write-log-seconds-total)
     (.register datoms)
     (.register index-datoms)
     (.register index-segments)
     (.register index-writes)
-    (.register index-writes-sec)
-    (.register index-creation-sec)
-    (.register index-fulltext-creation-sec)
+    (.register index-writes-seconds)
+    (.register index-creation-seconds)
+    (.register index-fulltext-creation-seconds)
     (.register memory-index-consumed-bytes)
     (.register storage-write-operations-total)
     (.register storage-write-bytes-total)
-    (.register storage-write-sec)
+    (.register storage-write-seconds)
     (.register storage-read-operations-total)
     (.register storage-read-bytes-total)
-    (.register storage-read-sec)
-    (.register storage-backoff-sec)
+    (.register storage-read-seconds)
+    (.register storage-backoff-seconds)
     (.register storage-backoff-retries-total)
     (.register object-cache-hits-ratio)
     (.register garbage-segments)
-    (.register heartbeats-sec)
+    (.register heartbeats-seconds)
     (.register heartbeats)
     ))
 
@@ -266,13 +266,13 @@
     (prom/inc! transacted-bytes-total sum))
 
   (when-let [{:keys [sum]} (:TransactionMsec tx-metrics)]
-    (prom/inc! transactions-sec-total (msec-to-sec sum)))
+    (prom/inc! transactions-seconds-total (msec-to-sec sum)))
 
   (when-let [{:keys [sum]} (:DbAddFulltextMsec tx-metrics)]
-    (prom/inc! transactions-add-fulltext-sec-total (msec-to-sec sum)))
+    (prom/inc! transactions-add-fulltext-seconds-total (msec-to-sec sum)))
 
   (when-let [{:keys [sum]} (:LogWriteMsec tx-metrics)]
-    (prom/inc! transactions-write-log-sec-total (msec-to-sec sum)))
+    (prom/inc! transactions-write-log-seconds-total (msec-to-sec sum)))
 
   (if-let [{:keys [sum]} (:Datoms tx-metrics)]
     (prom/set! datoms sum)
@@ -293,45 +293,45 @@
     (prom/clear! index-writes))
 
   (if-let [{:keys [sum]} (:IndexWriteMsec tx-metrics)]
-    (prom/set! index-writes-sec (msec-to-sec sum))
-    (prom/clear! index-writes-sec))
+    (prom/set! index-writes-seconds (msec-to-sec sum))
+    (prom/clear! index-writes-seconds))
 
   (if-let [{:keys [sum]} (:CreateEntireIndexMsec tx-metrics)]
-    (prom/set! index-creation-sec (msec-to-sec sum))
-    (prom/clear! index-creation-sec))
+    (prom/set! index-creation-seconds (msec-to-sec sum))
+    (prom/clear! index-creation-seconds))
 
   (if-let [{:keys [sum]} (:CreateFulltextIndexMsec tx-metrics)]
-    (prom/set! index-fulltext-creation-sec (msec-to-sec sum))
-    (prom/clear! index-fulltext-creation-sec))
+    (prom/set! index-fulltext-creation-seconds (msec-to-sec sum))
+    (prom/clear! index-fulltext-creation-seconds))
 
   (when-let [{:keys [sum]} (:MemoryIndexMB tx-metrics)]
     (prom/set! memory-index-consumed-bytes (mb-to-bytes sum)))
 
   (if-let [{:keys [sum]} (:MemoryIndexFillMsec tx-metrics)]
-    (prom/set! memory-index-fill-sec (msec-to-sec sum))
-    (prom/clear! memory-index-fill-sec))
+    (prom/set! memory-index-fill-seconds (msec-to-sec sum))
+    (prom/clear! memory-index-fill-seconds))
 
   (when-let [{:keys [sum count]} (:StoragePutBytes tx-metrics)]
     (prom/inc! storage-write-operations-total count)
     (prom/inc! storage-write-bytes-total sum))
 
   (if-let [{:keys [sum]} (:StoragePutMsec tx-metrics)]
-    (prom/set! storage-write-sec (msec-to-sec sum))
-    (prom/clear! storage-write-sec))
+    (prom/set! storage-write-seconds (msec-to-sec sum))
+    (prom/clear! storage-write-seconds))
 
   (when-let [{:keys [sum count]} (:StorageGetBytes tx-metrics)]
     (prom/inc! storage-read-operations-total count)
     (prom/inc! storage-read-bytes-total sum))
 
   (if-let [{:keys [sum]} (:StorageGetMsec tx-metrics)]
-    (prom/set! storage-read-sec (msec-to-sec sum))
-    (prom/clear! storage-read-sec))
+    (prom/set! storage-read-seconds (msec-to-sec sum))
+    (prom/clear! storage-read-seconds))
 
   (if-let [{:keys [sum count]} (:StorageBackoff tx-metrics)]
     (do
-      (prom/set! storage-backoff-sec (msec-to-sec sum))
+      (prom/set! storage-backoff-seconds (msec-to-sec sum))
       (prom/inc! storage-backoff-retries-total count))
-    (prom/clear! storage-backoff-sec))
+    (prom/clear! storage-backoff-seconds))
 
   (if-let [{:keys [sum count]} (:ObjectCache tx-metrics)]
     (do
@@ -346,7 +346,7 @@
     (prom/clear! garbage-segments))
 
   (when-let [{:keys [sum count]} (:HeartbeatMsec tx-metrics)]
-    (prom/set! heartbeats-sec (msec-to-sec sum))
+    (prom/set! heartbeats-seconds (msec-to-sec sum))
     (prom/set! heartbeats count))
   )
 

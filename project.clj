@@ -3,7 +3,7 @@
   :dependencies
   [[aleph "0.4.6"]
    [bidi "2.1.6"]
-   [com.taoensso/timbre "4.10.0"]
+   [com.taoensso/timbre "5.0.1"]
    [environ "1.1.0"]
    [io.prometheus/simpleclient_hotspot "0.5.0"]
    [org.clojure/clojure "1.10.1"]
